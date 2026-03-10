@@ -41,6 +41,7 @@ class AgentState(TypedDict):
     diagnosis_id: str
     reasoning_steps: list[dict]
     iteration_count: int
+    pending_tool_calls: list[dict]
 
 
 def build_agent_graph():
@@ -54,11 +55,14 @@ def build_agent_graph():
     )
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
 
-    tool_node = ToolNode(ALL_TOOLS)
+    tool_nodes: dict[str, ToolNode] = {t.name: ToolNode([t]) for t in ALL_TOOLS}
+    tool_node_names = {t.name: f"tool_{t.name}" for t in ALL_TOOLS}
+    tool_routes = {node_name: node_name for node_name in tool_node_names.values()}
 
     async def reasoning_node(state: AgentState) -> dict:
         """The 'Reason' step — call the LLM to decide the next action."""
         response = await llm_with_tools.ainvoke(state["messages"])
+        tool_calls = getattr(response, "tool_calls", None)
 
         # Persist to memory
         memory = AgentMemory(state["diagnosis_id"])
@@ -74,21 +78,47 @@ def build_agent_graph():
             "messages": [response],
             "reasoning_steps": state["reasoning_steps"] + [step],
             "iteration_count": state["iteration_count"] + 1,
+            "pending_tool_calls": list(tool_calls or []),
         }
 
-    async def tool_executor_node(state: AgentState) -> dict:
-        """The 'Act' step — execute the tool called by the LLM."""
-        result = await tool_node.ainvoke(state)
+    async def _run_single_tool(state: AgentState, tool_name: str) -> dict:
+        """Execute a single tool call for the specified tool name."""
+        if not state.get("pending_tool_calls"):
+            return {}
 
-        # Persist observations
+        tool_call = state["pending_tool_calls"][0]
+        if tool_call.get("name") != tool_name:
+            return {}
+
+        remaining = state["pending_tool_calls"][1:]
+        tool_message_request = AIMessage(
+            content="(tool call)",
+            tool_calls=[tool_call],
+        )
+
+        result = await tool_nodes[tool_name].ainvoke({"messages": [tool_message_request]})
+        return {"messages": result["messages"], "pending_tool_calls": remaining}
+
+    async def unknown_tool_node(state: AgentState) -> dict:
+        """Handle unknown tool calls gracefully."""
+        if not state.get("pending_tool_calls"):
+            return {}
+        tool_call = state["pending_tool_calls"][0]
+        remaining = state["pending_tool_calls"][1:]
+        msg = ToolMessage(
+            name=tool_call.get("name", "unknown_tool"),
+            content="Unknown tool call requested; skipping.",
+            tool_call_id=tool_call.get("id", "unknown"),
+        )
+        return {"messages": [msg], "pending_tool_calls": remaining}
+
+    async def observation_tool_result_node(state: AgentState) -> dict:
+        """The 'Observation' step — persist tool outputs and surface them."""
         memory = AgentMemory(state["diagnosis_id"])
-        for msg in result.get("messages", []):
+        steps = []
+        for msg in state.get("messages", []):
             if isinstance(msg, ToolMessage):
                 await memory.append("observation", msg.content[:1000])
-
-        steps = []
-        for msg in result.get("messages", []):
-            if isinstance(msg, ToolMessage):
                 steps.append(
                     {
                         "step_number": state["iteration_count"],
@@ -98,10 +128,7 @@ def build_agent_graph():
                     }
                 )
 
-        return {
-            "messages": result["messages"],
-            "reasoning_steps": state["reasoning_steps"] + steps,
-        }
+        return {"reasoning_steps": state["reasoning_steps"] + steps}
 
     def should_continue(state: AgentState) -> str:
         """Determine if the agent should keep going or finish."""
@@ -123,21 +150,57 @@ def build_agent_graph():
         # Otherwise the LLM has produced a final answer
         return "end"
 
-    graph = StateGraph(AgentState)
-    graph.add_node("reason", reasoning_node)
-    graph.add_node("tools", tool_executor_node)
+    def route_next_tool(state: AgentState) -> str:
+        """Route to the next tool-specific node or back to reasoning."""
+        if not state.get("pending_tool_calls"):
+            return "reason_thought"
+        tool_name = state["pending_tool_calls"][0].get("name", "")
+        return tool_node_names.get(tool_name, "unknown_tool")
 
-    graph.set_entry_point("reason")
+    graph = StateGraph(AgentState)
+    graph.add_node("reason_thought", reasoning_node)
+    graph.add_node("observation_tool_result", observation_tool_result_node)
+    graph.add_node("unknown_tool", unknown_tool_node)
+    graph.add_node(
+        "route_tool",
+        lambda state: {"pending_tool_calls": state.get("pending_tool_calls", [])},
+    )
+
+    def _make_tool_node(tool_name: str):
+        async def _node(state: AgentState) -> dict:
+            return await _run_single_tool(state, tool_name)
+
+        return _node
+
+    for tool in ALL_TOOLS:
+        tool_node_name = tool_node_names[tool.name]
+        graph.add_node(tool_node_name, _make_tool_node(tool.name))
+
+    graph.set_entry_point("reason_thought")
 
     graph.add_conditional_edges(
-        "reason",
+        "reason_thought",
         should_continue,
         {
-            "tools": "tools",
+            "tools": "route_tool",
             "end": END,
         },
     )
-    graph.add_edge("tools", "reason")
+    graph.add_conditional_edges(
+        "route_tool",
+        route_next_tool,
+        {**tool_routes, "unknown_tool": "unknown_tool", "reason_thought": "reason_thought"},
+    )
+
+    for tool in ALL_TOOLS:
+        graph.add_edge(tool_node_names[tool.name], "observation_tool_result")
+    graph.add_edge("unknown_tool", "observation_tool_result")
+
+    graph.add_conditional_edges(
+        "observation_tool_result",
+        route_next_tool,
+        {**tool_routes, "unknown_tool": "unknown_tool", "reason_thought": "reason_thought"},
+    )
 
     return graph.compile()
 
@@ -151,6 +214,43 @@ def get_agent():
     if _compiled_graph is None:
         _compiled_graph = build_agent_graph()
     return _compiled_graph
+
+
+def export_compiled_graph_mermaid(output_path: str) -> str:
+    """Export the compiled agent graph to a Mermaid file.
+
+    Returns the Mermaid source as a string.
+    """
+    compiled = get_agent()
+    graph = compiled.get_graph()
+    if not hasattr(graph, "draw_mermaid"):
+        raise RuntimeError("LangGraph does not expose draw_mermaid() in this version.")
+
+    mermaid = graph.draw_mermaid()
+    with open(output_path, "w", encoding="utf-8") as handle:
+        handle.write(mermaid)
+        if not mermaid.endswith("\n"):
+            handle.write("\n")
+    return mermaid
+
+
+def export_compiled_graph_png(output_path: str) -> bytes:
+    """Export the compiled agent graph to a PNG file.
+
+    Returns the PNG bytes.
+    """
+    compiled = get_agent()
+    graph = compiled.get_graph()
+    if hasattr(graph, "draw_mermaid_png"):
+        png_bytes = graph.draw_mermaid_png()
+        with open(output_path, "wb") as handle:
+            handle.write(png_bytes)
+        return png_bytes
+
+    raise RuntimeError(
+        "LangGraph does not expose draw_mermaid_png() in this version. "
+        "Use Mermaid CLI (mmdc) to render the .mmd file to PNG."
+    )
 
 
 def _extract_stream_content(event: dict) -> str | None:
@@ -193,6 +293,7 @@ async def run_diagnosis(
         "diagnosis_id": diag_id,
         "reasoning_steps": [],
         "iteration_count": 0,
+        "pending_tool_calls": [],
     }
 
     yield {

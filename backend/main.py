@@ -49,7 +49,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# --- CORS for local frontend development ---
 settings = get_settings()
 
 app.add_middleware(
@@ -60,12 +59,12 @@ app.add_middleware(
     allow_headers=settings.cors_allow_headers,
 )
 
-# --- Register API routes ---
+
 app.include_router(health_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
 app.include_router(diagnosis_router, prefix="/api")
 
-# --- Serve the frontend as static files ---
+
 app.mount(
     "/",
     StaticFiles(directory=settings.frontend_dir, html=True),
