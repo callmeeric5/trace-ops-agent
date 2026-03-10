@@ -45,8 +45,7 @@ TOOL_DESCRIPTIONS = {
         "keyword (str, optional), since_minutes (int, default 60), limit (int, default 100)."
     ),
     "get_log_by_id": (
-        "Fetch a single log entry by its ID.  "
-        "Parameters: log_id (str, required)."
+        "Fetch a single log entry by its ID.  " "Parameters: log_id (str, required)."
     ),
     "get_error_summary": (
         "Get aggregate ERROR/CRITICAL counts grouped by service.  "

@@ -1,13 +1,9 @@
 """Log storage and query service."""
 
-from __future__ import annotations
-
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.models.log_entry import LogEntryCreate, LogEntryORM, LogLevel
 
 
@@ -16,8 +12,6 @@ class LogStore:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
-
-    # ---- Write -----------------------------------------------------------
 
     async def insert(self, entry: LogEntryCreate) -> LogEntryORM:
         """Persist a single log entry and return the ORM instance."""
@@ -32,8 +26,6 @@ class LogStore:
         self._session.add_all(orm_objects)
         await self._session.flush()
         return [o.id for o in orm_objects]
-
-    # ---- Read ------------------------------------------------------------
 
     async def get_by_id(self, log_id: str) -> Optional[LogEntryORM]:
         result = await self._session.execute(
@@ -65,9 +57,7 @@ class LogStore:
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_error_counts_by_service(
-        self, since_minutes: int = 60
-    ) -> list[dict]:
+    async def get_error_counts_by_service(self, since_minutes: int = 60) -> list[dict]:
         """Aggregate error/critical counts grouped by service."""
         since = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
         stmt = (

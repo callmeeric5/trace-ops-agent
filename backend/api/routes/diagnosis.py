@@ -1,11 +1,8 @@
 """Diagnosis routes — trigger investigations, stream reasoning, approve actions."""
 
-from __future__ import annotations
-
 import json
 from datetime import datetime, timezone
 from uuid import uuid4
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +22,11 @@ from backend.models.diagnosis import (
 )
 
 router = APIRouter(prefix="/diagnosis", tags=["diagnosis"])
+
+
+def _set_status(diag: DiagnosisORM, status: DiagnosisStatus) -> None:
+    diag.status = status
+    diag.updated_at = datetime.now(timezone.utc)
 
 
 @router.post("/", status_code=201)
@@ -120,13 +122,14 @@ async def approve_action(
         raise HTTPException(status_code=404, detail="Diagnosis not found")
 
     if approval.approved:
-        diag.status = DiagnosisStatus.APPROVED
-        diag.updated_at = datetime.now(timezone.utc)
+        _set_status(diag, DiagnosisStatus.APPROVED)
         await db.commit()
-        return {"status": "approved", "message": "Action approved and will be executed."}
+        return {
+            "status": "approved",
+            "message": "Action approved and will be executed.",
+        }
     else:
-        diag.status = DiagnosisStatus.REJECTED
-        diag.updated_at = datetime.now(timezone.utc)
+        _set_status(diag, DiagnosisStatus.REJECTED)
         await db.commit()
         return {"status": "rejected", "message": "Action rejected by reviewer."}
 
@@ -145,8 +148,7 @@ async def set_recommended_action(
 
     diag.suggested_action = body.action_text
     diag.action_type = body.action_type
-    diag.status = DiagnosisStatus.IN_PROGRESS
-    diag.updated_at = datetime.now(timezone.utc)
+    _set_status(diag, DiagnosisStatus.IN_PROGRESS)
     await db.commit()
     return {
         "status": "awaiting_approval",
@@ -167,8 +169,7 @@ async def remind_later(
     if not diag:
         raise HTTPException(status_code=404, detail="Diagnosis not found")
 
-    diag.status = DiagnosisStatus.AWAITING_APPROVAL
-    diag.updated_at = datetime.now(timezone.utc)
+    _set_status(diag, DiagnosisStatus.AWAITING_APPROVAL)
     await db.commit()
     return {"status": "in_progress", "message": "Reminder set. Approval deferred."}
 

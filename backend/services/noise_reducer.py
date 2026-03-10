@@ -5,10 +5,7 @@ representative samples.  This cuts token cost by ~80 % on noisy production
 systems while preserving diagnostic signal.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
-
 import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer

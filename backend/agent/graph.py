@@ -8,8 +8,6 @@ Implements a Reason-Act-Observe loop with:
 - Streaming support for real-time UI updates
 """
 
-from __future__ import annotations
-
 import json
 import logging
 from typing import Any, AsyncIterator, TypedDict, Annotated, Sequence
@@ -36,9 +34,6 @@ from backend.config import get_settings
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# State
-# ---------------------------------------------------------------------------
 class AgentState(TypedDict):
     """State that flows through the LangGraph nodes."""
 
@@ -48,24 +43,18 @@ class AgentState(TypedDict):
     iteration_count: int
 
 
-# ---------------------------------------------------------------------------
-# Graph builder
-# ---------------------------------------------------------------------------
 def build_agent_graph():
     """Construct and compile the LangGraph agent."""
     settings = get_settings()
 
     llm = ChatGoogleGenerativeAI(
         model=settings.gemini_model,
-        google_api_key=settings.google_api_key,
+        api_key=settings.google_api_key,
         temperature=0,
-        streaming=True,
     )
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
 
     tool_node = ToolNode(ALL_TOOLS)
-
-    # ---- Nodes -----------------------------------------------------------
 
     async def reasoning_node(state: AgentState) -> dict:
         """The 'Reason' step — call the LLM to decide the next action."""
@@ -114,13 +103,13 @@ def build_agent_graph():
             "reasoning_steps": state["reasoning_steps"] + steps,
         }
 
-    # ---- Routing ---------------------------------------------------------
-
     def should_continue(state: AgentState) -> str:
         """Determine if the agent should keep going or finish."""
         settings = get_settings()
         if state["iteration_count"] >= settings.max_agent_iterations:
-            logger.warning("Agent hit max iteration limit (%d)", settings.max_agent_iterations)
+            logger.warning(
+                "Agent hit max iteration limit (%d)", settings.max_agent_iterations
+            )
             return "end"
 
         last_message = state["messages"][-1]
@@ -133,8 +122,6 @@ def build_agent_graph():
 
         # Otherwise the LLM has produced a final answer
         return "end"
-
-    # ---- Assemble --------------------------------------------------------
 
     graph = StateGraph(AgentState)
     graph.add_node("reason", reasoning_node)
@@ -155,9 +142,6 @@ def build_agent_graph():
     return graph.compile()
 
 
-# ---------------------------------------------------------------------------
-# Public interface
-# ---------------------------------------------------------------------------
 _compiled_graph = None
 
 
@@ -167,6 +151,23 @@ def get_agent():
     if _compiled_graph is None:
         _compiled_graph = build_agent_graph()
     return _compiled_graph
+
+
+def _extract_stream_content(event: dict) -> str | None:
+    chunk = event.get("data", {}).get("chunk")
+    if isinstance(chunk, str) and chunk:
+        return chunk
+    if hasattr(chunk, "content") and getattr(chunk, "content"):
+        return str(getattr(chunk, "content"))
+    return None
+
+
+def _tool_output_to_str(tool_output: Any) -> str:
+    if isinstance(tool_output, str):
+        return tool_output
+    if hasattr(tool_output, "content"):
+        return str(getattr(tool_output, "content"))
+    return str(tool_output)
 
 
 async def run_diagnosis(
@@ -207,11 +208,11 @@ async def run_diagnosis(
         kind = event.get("event")
 
         if kind == "on_chat_model_stream":
-            chunk = event.get("data", {}).get("chunk")
-            if chunk and hasattr(chunk, "content") and chunk.content:
+            content = _extract_stream_content(event)
+            if content:
                 yield {
                     "type": "stream",
-                    "content": chunk.content,
+                    "content": content,
                     "step_number": -1,
                 }
 
@@ -222,24 +223,23 @@ async def run_diagnosis(
                 "type": "action",
                 "content": f"Calling tool: {tool_name}",
                 "tool_name": tool_name,
-                "tool_input": json.dumps(tool_input) if isinstance(tool_input, dict) else str(tool_input),
+                "tool_input": (
+                    json.dumps(tool_input)
+                    if isinstance(tool_input, dict)
+                    else str(tool_input)
+                ),
                 "step_number": -1,
             }
 
         elif kind == "on_tool_end":
             tool_output = event.get("data", {}).get("output", "")
-            if hasattr(tool_output, "content"):
-                output_str = str(tool_output.content)
-            else:
-                output_str = str(tool_output) if not isinstance(tool_output, str) else tool_output
+            output_str = _tool_output_to_str(tool_output)
             yield {
                 "type": "observation",
                 "content": output_str[:1000],
                 "step_number": -1,
             }
 
-    # Final step — check guardrails on the last AI message
-    # (In a real production system we'd parse the conclusion more carefully)
     yield {
         "type": "conclusion",
         "diagnosis_id": diag_id,

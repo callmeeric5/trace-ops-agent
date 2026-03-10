@@ -1,10 +1,7 @@
 """Sentinel-Ops AI — Application Configuration."""
 
-from __future__ import annotations
-
 from functools import lru_cache
 from pathlib import Path
-
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,21 +17,21 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- Runtime ---
+    #  Runtime
     environment: str = "development"
     log_level: str = "INFO"
 
-    # --- Gemini ---
+    #  Gemini
     google_api_key: str = ""
     gemini_model: str = "gemini-2.5-fast"
 
-    # --- Database ---
+    #  Database
     database_url: str = f"sqlite+aiosqlite:///{PROJECT_ROOT / 'sentinel_ops.db'}"
 
-    # --- Server ---
+    #  Server
     debug: bool = False
 
-    # --- CORS ---
+    #  CORS
     cors_allow_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",

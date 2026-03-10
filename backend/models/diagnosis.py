@@ -1,16 +1,12 @@
 """ORM model and Pydantic schemas for diagnosis reports."""
 
-from __future__ import annotations
-
 import enum
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
-
 from pydantic import BaseModel
 from sqlalchemy import DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
 from backend.db.base import Base
 
 
@@ -26,9 +22,6 @@ class ActionType(str, enum.Enum):
     WRITE = "write"
 
 
-# ---------------------------------------------------------------------------
-# ORM
-# ---------------------------------------------------------------------------
 class DiagnosisORM(Base):
     __tablename__ = "diagnoses"
 
@@ -52,14 +45,9 @@ class DiagnosisORM(Base):
     conclusion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     evidence_ids: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     suggested_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    action_type: Mapped[Optional[str]] = mapped_column(
-        Enum(ActionType), nullable=True
-    )
+    action_type: Mapped[Optional[str]] = mapped_column(Enum(ActionType), nullable=True)
 
 
-# ---------------------------------------------------------------------------
-# Pydantic Schemas
-# ---------------------------------------------------------------------------
 class DiagnosisRequest(BaseModel):
     """Trigger a new diagnosis investigation."""
 

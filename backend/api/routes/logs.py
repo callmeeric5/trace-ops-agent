@@ -1,10 +1,7 @@
 """Log ingestion and query routes."""
 
-from __future__ import annotations
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from backend.db.database import get_db
 from backend.models.log_entry import (
     LogBatchCreate,
@@ -61,6 +58,7 @@ async def get_log(log_id: str, db: AsyncSession = Depends(get_db)):
     log = await store.get_by_id(log_id)
     if not log:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Log not found")
     return log
 

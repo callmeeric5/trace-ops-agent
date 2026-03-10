@@ -5,8 +5,6 @@ multiple runs.  Uses SQLite for simplicity; swap for Redis/PostgreSQL in
 production.
 """
 
-from __future__ import annotations
-
 import json
 from datetime import datetime, timezone
 from typing import Optional
@@ -41,6 +39,13 @@ class AgentMemory:
     def __init__(self, diagnosis_id: str) -> None:
         self.diagnosis_id = diagnosis_id
 
+    async def _commit(self, session: AsyncSession) -> None:
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
     async def append(self, step_type: str, content: str) -> None:
         """Persist a reasoning step."""
         async with async_session_factory() as session:
@@ -50,7 +55,7 @@ class AgentMemory:
                 content=content,
             )
             session.add(entry)
-            await session.commit()
+            await self._commit(session)
 
     async def get_history(self) -> list[dict]:
         """Return the full reasoning chain for this diagnosis."""

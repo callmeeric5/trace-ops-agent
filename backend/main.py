@@ -1,14 +1,10 @@
 """Sentinel-Ops AI — FastAPI Application Entry Point."""
 
-from __future__ import annotations
-
 import logging
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
 from backend.api.routes.diagnosis import router as diagnosis_router
 from backend.api.routes.health import router as health_router
 from backend.api.routes.logs import router as logs_router
@@ -30,7 +26,10 @@ async def lifespan(app: FastAPI):
     logger.info("🌎 Environment: %s", settings.environment)
     if settings.environment.lower() == "production" and settings.debug:
         logger.warning("DEBUG is enabled in production. Disable DEBUG for safety.")
-    if settings.environment.lower() == "production" and "*" in settings.cors_allow_origins:
+    if (
+        settings.environment.lower() == "production"
+        and "*" in settings.cors_allow_origins
+    ):
         logger.warning("CORS allows all origins in production. Tighten CORS settings.")
     if not settings.google_api_key:
         logger.warning("GOOGLE_API_KEY not set — diagnosis runs will fail without it.")

@@ -1,12 +1,9 @@
 """ORM model and Pydantic schemas for log entries."""
 
-from __future__ import annotations
-
 import enum
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
-
 from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,9 +11,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.db.base import Base
 
 
-# ---------------------------------------------------------------------------
-# Enums
-# ---------------------------------------------------------------------------
 class LogLevel(str, enum.Enum):
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -32,14 +26,9 @@ class LogSource(str, enum.Enum):
     SYSTEM = "system"
 
 
-# ---------------------------------------------------------------------------
-# SQLAlchemy ORM Model
-# ---------------------------------------------------------------------------
 class LogEntryORM(Base):
     __tablename__ = "log_entries"
-    __table_args__ = (
-        Index("ix_log_entries_service_level", "service", "level"),
-    )
+    __table_args__ = (Index("ix_log_entries_service_level", "service", "level"),)
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid4())
@@ -61,9 +50,6 @@ class LogEntryORM(Base):
         return f"<Log {self.id[:8]} [{self.level}] {self.service}: {self.message[:40]}>"
 
 
-# ---------------------------------------------------------------------------
-# Pydantic Schemas (API boundary)
-# ---------------------------------------------------------------------------
 class LogEntryCreate(BaseModel):
     """Schema for ingesting a new log entry."""
 

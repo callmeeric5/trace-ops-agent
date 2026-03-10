@@ -12,6 +12,23 @@ let evidenceCount = 0;
 let pendingRecommendedAction = null;
 let lastThoughtText = '';
 
+async function apiRequest(path, options = {}) {
+    const response = await fetch(`${API_BASE}${path}`, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+    });
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text}`);
+    }
+    return response;
+}
+
+async function apiJson(path, options = {}) {
+    const response = await apiRequest(path, options);
+    return response.json();
+}
+
 // ---- Initialization -------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -46,17 +63,10 @@ async function startDiagnosis() {
 
     try {
         // 1. Create the diagnosis
-        const response = await fetch(`${API_BASE}/diagnosis/`, {
+        const data = await apiJson('/diagnosis/', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ description }),
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
-
-        const data = await response.json();
         currentDiagnosisId = data.diagnosis_id;
         loadHistory();
 
@@ -317,9 +327,8 @@ function showApprovalPanel(data) {
 async function approveAction() {
     if (!currentDiagnosisId) return;
     try {
-        await fetch(`${API_BASE}/diagnosis/approve`, {
+        await apiRequest('/diagnosis/approve', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 diagnosis_id: currentDiagnosisId,
                 approved: true,
@@ -336,9 +345,8 @@ async function approveAction() {
 async function rejectAction() {
     if (!currentDiagnosisId) return;
     try {
-        await fetch(`${API_BASE}/diagnosis/approve`, {
+        await apiRequest('/diagnosis/approve', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 diagnosis_id: currentDiagnosisId,
                 approved: false,
@@ -374,9 +382,7 @@ function checkForWriteActions() {
 
 async function loadHistory() {
     try {
-        const response = await fetch(`${API_BASE}/diagnosis/`);
-        if (!response.ok) return;
-        const payload = await response.json();
+        const payload = await apiJson('/diagnosis/');
         const diagnoses = normalizeDiagnoses(payload);
 
         const list = document.getElementById('historyList');
@@ -540,9 +546,8 @@ function showRecommendedActionPanel(actionText) {
 async function approveRecommendedAction() {
     if (!currentDiagnosisId) return;
     try {
-        await fetch(`${API_BASE}/diagnosis/approve`, {
+        await apiRequest('/diagnosis/approve', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 diagnosis_id: currentDiagnosisId,
                 approved: true,
@@ -560,9 +565,8 @@ async function approveRecommendedAction() {
 async function rejectRecommendedAction() {
     if (!currentDiagnosisId) return;
     try {
-        await fetch(`${API_BASE}/diagnosis/approve`, {
+        await apiRequest('/diagnosis/approve', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 diagnosis_id: currentDiagnosisId,
                 approved: false,
@@ -580,9 +584,8 @@ async function rejectRecommendedAction() {
 async function remindRecommendedActionLater() {
     if (!currentDiagnosisId) return;
     try {
-        await fetch(`${API_BASE}/diagnosis/remind-later`, {
+        await apiRequest('/diagnosis/remind-later', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 diagnosis_id: currentDiagnosisId,
                 approved: false,
@@ -600,9 +603,8 @@ async function remindRecommendedActionLater() {
 async function persistRecommendedAction(actionText) {
     if (!currentDiagnosisId) return;
     try {
-        await fetch(`${API_BASE}/diagnosis/recommended-action`, {
+        await apiRequest('/diagnosis/recommended-action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 diagnosis_id: currentDiagnosisId,
                 action_text: actionText,

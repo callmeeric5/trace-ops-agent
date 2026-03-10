@@ -1,15 +1,30 @@
 """Agent tools — callable functions the LangGraph agent can invoke."""
 
-from __future__ import annotations
-
 from typing import Optional
-
 from langchain_core.tools import tool
-
 from backend.db.database import async_session_factory
 from backend.services.log_store import LogStore
 from backend.services.noise_reducer import NoiseReducer
 from backend.models.log_entry import LogLevel
+
+MAX_TEXT_CHARS = 1000
+STACK_TRACE_PREVIEW_CHARS = 300
+
+
+def _truncate(text: str, limit: int = MAX_TEXT_CHARS) -> str:
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}…"
+
+
+def _format_log_line(log, stack_trace_limit: int = STACK_TRACE_PREVIEW_CHARS) -> str:
+    line = (
+        f"[log_id={log.id}] {log.timestamp.isoformat()} "
+        f"[{log.level}] {log.service}: {log.message}"
+    )
+    if log.stack_trace:
+        line += f"\n  STACK_TRACE: {_truncate(log.stack_trace, stack_trace_limit)}"
+    return line
 
 
 @tool
@@ -48,15 +63,7 @@ async def search_logs(
     if not logs:
         return "No log entries found matching the filters."
 
-    lines: list[str] = []
-    for log in logs:
-        line = (
-            f"[log_id={log.id}] {log.timestamp.isoformat()} "
-            f"[{log.level}] {log.service}: {log.message}"
-        )
-        if log.stack_trace:
-            line += f"\n  STACK_TRACE: {log.stack_trace[:300]}"
-        lines.append(line)
+    lines = [_format_log_line(log) for log in logs]
     return "\n".join(lines)
 
 
@@ -79,14 +86,14 @@ async def get_log_by_id(log_id: str) -> str:
         f"timestamp: {log.timestamp.isoformat()}",
         f"service: {log.service}",
         f"level: {log.level}",
-        f"message: {log.message}",
+        f"message: {_truncate(log.message)}",
     ]
     if log.trace_id:
         parts.append(f"trace_id: {log.trace_id}")
     if log.stack_trace:
-        parts.append(f"stack_trace: {log.stack_trace}")
+        parts.append(f"stack_trace: {_truncate(log.stack_trace)}")
     if log.metadata_json:
-        parts.append(f"metadata: {log.metadata_json}")
+        parts.append(f"metadata: {_truncate(log.metadata_json)}")
     return "\n".join(parts)
 
 
@@ -132,8 +139,8 @@ async def get_stack_traces(
         lines.append(
             f"[log_id={log.id}] {log.timestamp.isoformat()} "
             f"{log.service} [{log.level}]\n"
-            f"  Message: {log.message}\n"
-            f"  Stack Trace:\n{log.stack_trace}"
+            f"  Message: {_truncate(log.message)}\n"
+            f"  Stack Trace:\n{_truncate(log.stack_trace or '')}"
         )
     return "\n---\n".join(lines)
 
@@ -178,7 +185,7 @@ async def get_clustered_logs(
             ids_preview += f" ... (+{len(cluster.log_ids) - 5} more)"
         lines.append(
             f"[cluster_size={cluster.cluster_size}] "
-            f"{cluster.representative_message}\n"
+            f"{_truncate(cluster.representative_message)}\n"
             f"  log_ids: [{ids_preview}]"
         )
     return "\n".join(lines)

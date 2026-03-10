@@ -4,17 +4,15 @@ Read operations (viewing logs, metrics) proceed automatically.
 Write operations (restart pod, change config) require explicit human approval.
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from enum import Enum
 
 
 class RiskLevel(str, Enum):
-    LOW = "low"         # Read-only / observational
-    MEDIUM = "medium"   # Reversible write
-    HIGH = "high"       # Potentially destructive
+    LOW = "low"  # Read-only / observational
+    MEDIUM = "medium"  # Reversible write
+    HIGH = "high"  # Potentially destructive
 
     @property
     def requires_approval(self) -> bool:
