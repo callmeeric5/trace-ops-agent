@@ -19,7 +19,7 @@ htmlcov/
 *.sqlite
 *.sqlite3
 .ipynb_checkpoints/
-
+.next/
 # Docker
 *.log
 
