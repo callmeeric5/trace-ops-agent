@@ -3,10 +3,18 @@
 [English](#english) | [中文](#中文)
 
 ---
+## 📋 Diagnosis your log!
+![alt text](doc/pic/Logo.png)
 
+## 🤖 ReACT Agent 
+![](doc/pic/dashboard1.png)
+
+## 👶 Human interaction
+![](doc/pic/dashboard2.png)
 ## English
 
 Production-grade reasoning agent that diagnoses system failures from logs, metrics, and traces. The FastAPI backend streams a live reasoning trace over SSE and serves a static dashboard UI.
+
 
 ### What This Repo Contains ✨
 
