@@ -10,14 +10,15 @@ dist/
 build/
 .venv/
 venv/
-
-# ChromaDB
-chroma_data/
-
-# Node
-node_modules/
-.next/
-out/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+htmlcov/
+*.sqlite
+*.sqlite3
+.ipynb_checkpoints/
 
 # Docker
 *.log

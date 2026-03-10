@@ -16,7 +16,8 @@ from sqlalchemy import DateTime, String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.db.database import Base, async_session_factory
+from backend.db.base import Base
+from backend.db.database import async_session_factory
 
 
 class InvestigationMemoryORM(Base):

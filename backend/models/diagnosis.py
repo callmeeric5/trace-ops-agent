@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy import DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.db.database import Base
+from backend.db.base import Base
 
 
 class DiagnosisStatus(str, enum.Enum):
@@ -19,7 +19,6 @@ class DiagnosisStatus(str, enum.Enum):
     AWAITING_APPROVAL = "awaiting_approval"
     APPROVED = "approved"
     REJECTED = "rejected"
-    FAILED = "failed"
 
 
 class ActionType(str, enum.Enum):
@@ -82,6 +81,7 @@ class DiagnosisResponse(BaseModel):
 
     id: str
     created_at: datetime
+    updated_at: datetime
     status: DiagnosisStatus
     trigger_description: str
     reasoning_trace: Optional[str] = None

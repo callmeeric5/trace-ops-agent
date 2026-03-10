@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.db.database import Base
+from backend.db.base import Base
 
 
 # ---------------------------------------------------------------------------

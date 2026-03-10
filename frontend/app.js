@@ -327,6 +327,7 @@ async function approveAction() {
         });
         addReasoningStep('guardrail', 'Action APPROVED by human reviewer.');
         document.getElementById('approvalPanel').classList.add('hidden');
+        loadHistory();
     } catch (err) {
         console.error('Approval failed:', err);
     }
@@ -345,6 +346,7 @@ async function rejectAction() {
         });
         addReasoningStep('guardrail', 'Action REJECTED by human reviewer.');
         document.getElementById('approvalPanel').classList.add('hidden');
+        loadHistory();
     } catch (err) {
         console.error('Rejection failed:', err);
     }
@@ -387,7 +389,7 @@ async function loadHistory() {
             <div class="history-item" onclick="viewDiagnosis('${d.id}')">
                 <span class="history-desc">${escapeHtml(d.trigger_description || d.summary || 'Investigation')}</span>
                 <span class="history-status ${d.status}">${String(d.status || 'unknown').replace('_', ' ')}</span>
-                <span class="history-time">${formatTime(d.created_at || d.completed_at || '')}</span>
+                <span class="history-time">${formatTime(d.updated_at || d.created_at || '')}</span>
             </div>
         `).join('');
     } catch (err) {
@@ -490,7 +492,10 @@ function escapeHtml(text) {
 
 function formatTime(isoString) {
     try {
-        const date = new Date(isoString);
+        if (!isoString) return '';
+        const hasZone = /Z$|[+-]\d{2}:\d{2}$/.test(isoString);
+        const safeIso = hasZone ? isoString : `${isoString}Z`;
+        const date = new Date(safeIso);
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);
@@ -611,14 +616,25 @@ async function persistRecommendedAction(actionText) {
 }
 
 function normalizeDiagnoses(payload) {
-    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload)) {
+        return payload.map((d) => ({
+            ...d,
+            status: normalizeStatus(d.status),
+        }));
+    }
     if (payload && Array.isArray(payload.sessions)) {
         return payload.sessions.map((s) => ({
             id: s.diagnosis_id,
-            status: s.status,
+            status: normalizeStatus(s.status),
             trigger_description: s.summary || s.alert_message || '',
             created_at: s.created_at || s.completed_at || '',
         }));
     }
     return [];
+}
+
+function normalizeStatus(status) {
+    if (!status) return 'in_progress';
+    if (status === 'failed') return 'rejected';
+    return status;
 }

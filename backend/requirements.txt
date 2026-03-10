@@ -2,19 +2,22 @@
 
 # Web Framework
 fastapi==0.115.0
-uvicorn[standard]==0.30.0
-pydantic-settings==2.5.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
 
 # AI / Agent
-google-generativeai==0.8.0
-langgraph==0.2.0
-langchain-core==0.3.0
-
-# Vector Store
-chromadb==0.5.0
+langchain-core==0.3.10
+langchain-google-genai>=2.0.1
+langgraph==0.2.34
 
 # HTTP Client
-httpx==0.27.0
+httpx==0.27.2
 
 # Utilities
+aiosqlite==0.20.0
+numpy==1.26.4
 python-dotenv==1.0.1
+scikit-learn==1.5.2
+sse-starlette==2.1.3
+sqlalchemy==2.0.35

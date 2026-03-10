@@ -12,7 +12,7 @@ Production-grade reasoning agent that diagnoses system failures from logs, metri
 
 - FastAPI backend with a LangGraph ReAct agent and safety guardrails
 - Static dashboard UI served directly by the backend
-- Seed data and simulators for realistic incident scenarios
+- Seed data for realistic incident scenarios
 - Evaluation harness scaffold (placeholder)
 
 ### Quick Start (Local) 🚀
@@ -32,9 +32,10 @@ The backend loads settings from `.env` by default. Create or edit it with your o
 GOOGLE_API_KEY=your_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 DATABASE_URL=sqlite+aiosqlite:///./sentinel_ops.db
-HOST=0.0.0.0
-PORT=8000
+ENVIRONMENT=development
+LOG_LEVEL=INFO
 DEBUG=true
+CORS_ALLOW_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 MAX_AGENT_ITERATIONS=15
 NOISE_REDUCTION_THRESHOLD=0.75
 ```
@@ -94,7 +95,6 @@ Then open `http://localhost:8000`.
 
 - `backend/` — FastAPI app, agent graph, tools, storage
 - `frontend/` — static dashboard UI served by the backend
-- `services/` — log simulators for demo scenarios
 - `scripts/` — utilities like log seeding
 - `evals/` — evaluation harness (currently a stub)
 
@@ -118,7 +118,7 @@ MIT
 
 - 基于 FastAPI 的后端，内置 LangGraph ReAct Agent 与安全护栏
 - 由后端直接托管的静态 Dashboard
-- 真实化的种子日志与模拟服务
+- 真实化的种子日志
 - 评测框架脚手架（占位）
 
 ### 本地快速开始 🚀
@@ -138,9 +138,10 @@ MIT
 GOOGLE_API_KEY=your_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 DATABASE_URL=sqlite+aiosqlite:///./sentinel_ops.db
-HOST=0.0.0.0
-PORT=8000
+ENVIRONMENT=development
+LOG_LEVEL=INFO
 DEBUG=true
+CORS_ALLOW_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 MAX_AGENT_ITERATIONS=15
 NOISE_REDUCTION_THRESHOLD=0.75
 ```
@@ -200,7 +201,6 @@ docker compose exec backend uv run python -m scripts.seed_logs
 
 - `backend/` — FastAPI、Agent、工具与存储
 - `frontend/` — 静态 Dashboard
-- `services/` — 日志模拟服务
 - `scripts/` — 工具脚本（如日志导入）
 - `evals/` — 评测框架（占位）
 

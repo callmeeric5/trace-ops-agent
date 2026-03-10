@@ -21,11 +21,19 @@ logger = logging.getLogger("sentinel-ops")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup / shutdown hooks."""
+    settings = get_settings()
     logging.basicConfig(
-        level=logging.DEBUG if get_settings().debug else logging.INFO,
+        level=getattr(logging, settings.log_level.upper(), logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
     logger.info("🚀 Sentinel-Ops AI starting up…")
+    logger.info("🌎 Environment: %s", settings.environment)
+    if settings.environment.lower() == "production" and settings.debug:
+        logger.warning("DEBUG is enabled in production. Disable DEBUG for safety.")
+    if settings.environment.lower() == "production" and "*" in settings.cors_allow_origins:
+        logger.warning("CORS allows all origins in production. Tighten CORS settings.")
+    if not settings.google_api_key:
+        logger.warning("GOOGLE_API_KEY not set — diagnosis runs will fail without it.")
     await init_db()
     logger.info("✅ Database tables created / verified")
     yield
@@ -43,12 +51,14 @@ app = FastAPI(
 )
 
 # --- CORS for local frontend development ---
+settings = get_settings()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.cors_allow_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods,
+    allow_headers=settings.cors_allow_headers,
 )
 
 # --- Register API routes ---
@@ -57,4 +67,8 @@ app.include_router(logs_router, prefix="/api")
 app.include_router(diagnosis_router, prefix="/api")
 
 # --- Serve the frontend as static files ---
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+app.mount(
+    "/",
+    StaticFiles(directory=settings.frontend_dir, html=True),
+    name="frontend",
+)

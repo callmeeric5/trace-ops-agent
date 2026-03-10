@@ -748,24 +748,9 @@ body::before {
     letter-spacing: 0.5px;
 }
 
-.history-status.completed {
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--accent-emerald);
-}
-
 .history-status.in_progress {
     background: rgba(99, 102, 241, 0.15);
     color: var(--accent-indigo);
-}
-
-.history-status.awaiting_approval {
-    background: rgba(245, 158, 11, 0.15);
-    color: var(--accent-amber);
-}
-
-.history-status.failed {
-    background: rgba(244, 63, 94, 0.15);
-    color: var(--accent-rose);
 }
 
 .history-status.approved {
@@ -839,4 +824,8 @@ body::before {
         width: 100%;
         justify-content: center;
     }
+}
+.history-status.awaiting_approval {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-amber);
 }

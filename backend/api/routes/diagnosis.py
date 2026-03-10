@@ -91,7 +91,7 @@ async def stream_diagnosis(diagnosis_id: str):
 @router.get("/", response_model=list[DiagnosisResponse])
 async def list_diagnoses(db: AsyncSession = Depends(get_db)):
     """List all diagnoses, newest first."""
-    stmt = select(DiagnosisORM).order_by(DiagnosisORM.created_at.desc()).limit(50)
+    stmt = select(DiagnosisORM).order_by(DiagnosisORM.updated_at.desc()).limit(50)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -121,10 +121,12 @@ async def approve_action(
 
     if approval.approved:
         diag.status = DiagnosisStatus.APPROVED
+        diag.updated_at = datetime.now(timezone.utc)
         await db.commit()
         return {"status": "approved", "message": "Action approved and will be executed."}
     else:
         diag.status = DiagnosisStatus.REJECTED
+        diag.updated_at = datetime.now(timezone.utc)
         await db.commit()
         return {"status": "rejected", "message": "Action rejected by reviewer."}
 
@@ -143,7 +145,8 @@ async def set_recommended_action(
 
     diag.suggested_action = body.action_text
     diag.action_type = body.action_type
-    diag.status = DiagnosisStatus.AWAITING_APPROVAL
+    diag.status = DiagnosisStatus.IN_PROGRESS
+    diag.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return {
         "status": "awaiting_approval",
@@ -164,7 +167,8 @@ async def remind_later(
     if not diag:
         raise HTTPException(status_code=404, detail="Diagnosis not found")
 
-    diag.status = DiagnosisStatus.IN_PROGRESS
+    diag.status = DiagnosisStatus.AWAITING_APPROVAL
+    diag.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return {"status": "in_progress", "message": "Reminder set. Approval deferred."}
 
