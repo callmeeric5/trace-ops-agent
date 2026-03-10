@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """Centralised, validated application settings loaded from env / .env file."""
 
     model_config = SettingsConfigDict(
-        env_file=str(PROJECT_ROOT / ".env.local"),
+        env_file=str(PROJECT_ROOT / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

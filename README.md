@@ -8,24 +8,24 @@
 
 Production-grade reasoning agent that diagnoses system failures from logs, metrics, and traces. The FastAPI backend streams a live reasoning trace over SSE and serves a static dashboard UI.
 
-### What This Repo Contains
+### What This Repo Contains ✨
 
 - FastAPI backend with a LangGraph ReAct agent and safety guardrails
 - Static dashboard UI served directly by the backend
 - Seed data and simulators for realistic incident scenarios
 - Evaluation harness scaffold (placeholder)
 
-### Quick Start (Local)
+### Quick Start (Local) 🚀
 
-#### Prerequisites
+#### Prerequisites ✅
 
 - Python 3.12+
 - `uv` package manager
 - A Google Gemini API key
 
-#### 1) Configure environment
+#### 1) Configure environment ⚙️
 
-The backend loads settings from `.env.local` by default. Create or edit it with your own values:
+The backend loads settings from `.env` by default. Create or edit it with your own values:
 
 ```bash
 # Example
@@ -39,31 +39,31 @@ MAX_AGENT_ITERATIONS=15
 NOISE_REDUCTION_THRESHOLD=0.75
 ```
 
-#### 2) Install dependencies
+#### 2) Install dependencies 📦
 
 ```bash
 uv sync
 ```
 
-#### 3) Seed demo logs
+#### 3) Seed demo logs 🧪
 
 ```bash
 uv run python -m scripts.seed_logs
 ```
 
-#### 4) Run the backend
+#### 4) Run the backend ▶️
 
 ```bash
 uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### 5) Open the dashboard
+#### 5) Open the dashboard 🖥️
 
 Open `http://localhost:8000` in your browser.
 
-### Docker Compose
+### Docker Compose 🐳
 
-Docker uses `.env` (not `.env.local`). Keep the same variables in `.env` when running the stack via compose.
+Docker also uses `.env`. Keep the same variables in `.env` when running the stack via compose.
 
 ```bash
 docker compose up --build
@@ -77,7 +77,7 @@ docker compose exec backend uv run python -m scripts.seed_logs
 
 Then open `http://localhost:8000`.
 
-### Key API Endpoints
+### Key API Endpoints 🔌
 
 - `GET /api/health` — health check
 - `POST /api/logs/` — ingest a single log
@@ -90,7 +90,7 @@ Then open `http://localhost:8000`.
 - `POST /api/diagnosis/approve` — approve or reject the recommendation
 - `POST /api/diagnosis/remind-later` — keep status as `in_progress`
 
-### Project Layout
+### Project Layout 🧭
 
 - `backend/` — FastAPI app, agent graph, tools, storage
 - `frontend/` — static dashboard UI served by the backend
@@ -98,7 +98,7 @@ Then open `http://localhost:8000`.
 - `scripts/` — utilities like log seeding
 - `evals/` — evaluation harness (currently a stub)
 
-### Notes
+### Notes 📝
 
 - The static dashboard is served from `frontend/` via the FastAPI app in `backend/main.py`.
 - The agent streams reasoning steps to the UI; the final recommendation can be approved, rejected, or deferred.
@@ -114,24 +114,24 @@ MIT
 
 面向生产环境的故障诊断推理 Agent，基于日志、指标、链路追踪进行分析。FastAPI 后端通过 SSE 实时推送推理过程，并直接托管静态 Dashboard。
 
-### 项目包含内容
+### 项目包含内容 ✨
 
 - 基于 FastAPI 的后端，内置 LangGraph ReAct Agent 与安全护栏
 - 由后端直接托管的静态 Dashboard
 - 真实化的种子日志与模拟服务
 - 评测框架脚手架（占位）
 
-### 本地快速开始
+### 本地快速开始 🚀
 
-#### 依赖
+#### 依赖 ✅
 
 - Python 3.12+
 - `uv` 包管理器
 - Google Gemini API Key
 
-#### 1) 配置环境变量
+#### 1) 配置环境变量 ⚙️
 
-后端默认读取 `.env.local`。请创建或编辑该文件：
+后端默认读取 `.env`。请创建或编辑该文件：
 
 ```bash
 # 示例
@@ -145,31 +145,31 @@ MAX_AGENT_ITERATIONS=15
 NOISE_REDUCTION_THRESHOLD=0.75
 ```
 
-#### 2) 安装依赖
+#### 2) 安装依赖 📦
 
 ```bash
 uv sync
 ```
 
-#### 3) 导入演示日志
+#### 3) 导入演示日志 🧪
 
 ```bash
 uv run python -m scripts.seed_logs
 ```
 
-#### 4) 启动后端
+#### 4) 启动后端 ▶️
 
 ```bash
 uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### 5) 打开 Dashboard
+#### 5) 打开 Dashboard 🖥️
 
 浏览器访问 `http://localhost:8000`。
 
-### Docker Compose
+### Docker Compose 🐳
 
-Docker 使用 `.env`（不是 `.env.local`）。请在 `.env` 中保持相同配置。
+Docker 同样使用 `.env`。请在 `.env` 中保持相同配置。
 
 ```bash
 docker compose up --build
@@ -183,7 +183,7 @@ docker compose exec backend uv run python -m scripts.seed_logs
 
 然后打开 `http://localhost:8000`。
 
-### 关键 API
+### 关键 API 🔌
 
 - `GET /api/health` — 健康检查
 - `POST /api/logs/` — 单条日志写入
@@ -196,7 +196,7 @@ docker compose exec backend uv run python -m scripts.seed_logs
 - `POST /api/diagnosis/approve` — 通过或拒绝
 - `POST /api/diagnosis/remind-later` — 保持 `in_progress`
 
-### 目录结构
+### 目录结构 🧭
 
 - `backend/` — FastAPI、Agent、工具与存储
 - `frontend/` — 静态 Dashboard
@@ -204,7 +204,7 @@ docker compose exec backend uv run python -m scripts.seed_logs
 - `scripts/` — 工具脚本（如日志导入）
 - `evals/` — 评测框架（占位）
 
-### 备注
+### 备注 📝
 
 - Dashboard 由 `backend/main.py` 直接托管 `frontend/`。
 - 推理过程通过 SSE 实时展示，推荐动作可审批、拒绝或延后处理。
