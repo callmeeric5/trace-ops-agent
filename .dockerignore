@@ -1,0 +1,45 @@
+# Ignore virtual environments
+.venv
+.uv-venv
+venv/
+env/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ignore environment variables
+.env
+.env.local
+
+# Ignore sqlite database
+*.db
+*.sqlite3
+data/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+
+# Ignore Docker cache / artifacts
+.docker/

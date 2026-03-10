@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  # --- Sentinel-Ops Backend ---
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/sentinel_ops.db
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app/frontend
+      - db-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # --- Simulated Services (log generators) ---
+  order-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.order_service.simulator
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/sentinel_ops.db
+    env_file:
+      - .env
+
+  inventory-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.inventory_service.simulator
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/sentinel_ops.db
+    env_file:
+      - .env
+
+  payment-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.payment_service.simulator
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/sentinel_ops.db
+    env_file:
+      - .env
+
+volumes:
+  db-data:

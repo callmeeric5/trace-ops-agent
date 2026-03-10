@@ -1,0 +1,36 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# ChromaDB
+chroma_data/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+.README.md
+*.db

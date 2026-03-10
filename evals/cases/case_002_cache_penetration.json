@@ -1,0 +1,19 @@
+{
+  "id": "case_002",
+  "name": "Cache Penetration Attack",
+  "description": "cache-service has high miss rate due to repeated lookups of non-existent keys that bypass caching",
+  "alert_message": "cache-service latency spiking. 80%+ cache miss rate. Possible cache penetration.",
+  "service_hint": "cache-service",
+  "severity": "high",
+  "expected_root_cause": "Cache penetration - null results from database are not being cached. Every request for a missing key hits the database, causing cascading latency.",
+  "expected_evidence_patterns": [
+    "Cache penetration",
+    "null not cached",
+    "Cache MISS",
+    "falling back to database"
+  ],
+  "expected_actions": [
+    "Cache null/empty results with a short TTL",
+    "Implement bloom filter for key existence check"
+  ]
+}

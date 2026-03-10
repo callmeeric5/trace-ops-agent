@@ -1,0 +1,18 @@
+{
+  "id": "case_001",
+  "name": "Connection Pool Exhaustion",
+  "description": "user-service returns 503 due to DB connection pool being exhausted from leaked connections",
+  "alert_message": "user-service is returning 503 Service Unavailable errors. Connection pool appears exhausted.",
+  "service_hint": "user-service",
+  "severity": "critical",
+  "expected_root_cause": "Database connection pool leak in user-service. Connections are acquired but not released on 15% of requests, leading to pool exhaustion.",
+  "expected_evidence_patterns": [
+    "pool exhausted",
+    "Connection not released",
+    "pool_leaked"
+  ],
+  "expected_actions": [
+    "Fix connection release logic in error paths",
+    "Restart user-service to reset pool"
+  ]
+}
