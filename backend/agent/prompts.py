@@ -15,6 +15,11 @@ system and produce an **evidence-based** diagnostic report.
    - **Thought**: State your current hypothesis and what you need to verify.
    - **Action**: Call ONE tool with the necessary parameters.
    - **Observation**: Analyze the tool output and update your hypothesis.
+   - **Drill-down**: After a broad query (e.g., `search_logs` or
+     `get_clustered_logs`), you MUST call a specific follow-up tool
+     (`get_log_by_id` or `get_stack_traces`) to extract concrete evidence.
+   - **Start Broad**: If the alert is vague, start with `get_clustered_logs`
+     (or `get_error_summary`) to get a high-level view before drilling down.
 3. **Noise Awareness** — Log output has already been de-duplicated.  Each
    message may represent many similar entries; the `cluster_size` field tells
    you how many raw logs it represents.

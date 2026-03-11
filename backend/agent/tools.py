@@ -27,6 +27,16 @@ def _format_log_line(log, stack_trace_limit: int = STACK_TRACE_PREVIEW_CHARS) ->
     return line
 
 
+def _format_log_id_list(log_ids: list[str], max_items: int = 5) -> str:
+    if not log_ids:
+        return ""
+    preview = log_ids[:max_items]
+    more = len(log_ids) - len(preview)
+    suffix = f" ... (+{more} more)" if more > 0 else ""
+    ids = ", ".join(preview)
+    return f"[log_ids={ids}{suffix}]"
+
+
 @tool
 async def search_logs(
     service: Optional[str] = None,
@@ -183,9 +193,11 @@ async def get_clustered_logs(
         ids_preview = ", ".join(cluster.log_ids[:5])
         if len(cluster.log_ids) > 5:
             ids_preview += f" ... (+{len(cluster.log_ids) - 5} more)"
+        first_log_id = cluster.log_ids[0] if cluster.log_ids else "unknown"
         lines.append(
             f"[cluster_size={cluster.cluster_size}] "
             f"{_truncate(cluster.representative_message)}\n"
+            f"  [log_id={first_log_id}] {_format_log_id_list(cluster.log_ids)}\n"
             f"  log_ids: [{ids_preview}]"
         )
     return "\n".join(lines)

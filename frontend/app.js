@@ -245,13 +245,21 @@ function addReasoningStep(type, content, toolName, toolInput) {
 
 // ---- Evidence Extraction ---------------------------------------------------
 
+function normalizeLogId(rawId) {
+    if (!rawId) return '';
+    const trimmed = rawId.trim().replace(/[),.\]]+$/g, '');
+    const uuidMatch = trimmed.match(/[0-9a-fA-F-]{36}/);
+    return uuidMatch ? uuidMatch[0] : trimmed;
+}
+
 function extractEvidence(observationText) {
     // Parse log entries from observation text (looking for [log_id=...] patterns)
     const logPattern = /\[log_id=([^\]]+)\]\s*([^\n]+)/g;
     let match;
 
     while ((match = logPattern.exec(observationText)) !== null) {
-        const logId = match[1];
+        const logId = normalizeLogId(match[1]);
+        if (!logId) continue;
         const logLine = match[2].trim();
 
         // Parse level from the log line
@@ -267,6 +275,36 @@ function extractEvidence(observationText) {
         const message = msgMatch ? msgMatch[1] : logLine;
 
         addEvidenceItem(logId, level, service, message);
+    }
+
+    // Parse clustered log id lists: [log_ids=id1, id2 ...]
+    const logIdsPattern = /\[log_ids=([^\]]+)\]/g;
+    while ((match = logIdsPattern.exec(observationText)) !== null) {
+        const rawIds = match[1]
+            .replace(/\.\.\.\s*\(\+\d+\s*more\)/, '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
+        for (const id of rawIds) {
+            const logId = normalizeLogId(id);
+            if (!logId || logId === 'unknown') continue;
+            addEvidenceItem(logId, 'INFO', '', 'Clustered log (expand with get_log_by_id).');
+        }
+    }
+
+    // Parse clustered log id lists: log_ids: [id1, id2 ...]
+    const logIdsLegacyPattern = /log_ids:\s*\[([^\]]+)\]/g;
+    while ((match = logIdsLegacyPattern.exec(observationText)) !== null) {
+        const rawIds = match[1]
+            .replace(/\.\.\.\s*\(\+\d+\s*more\)/, '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
+        for (const id of rawIds) {
+            const logId = normalizeLogId(id);
+            if (!logId || logId === 'unknown') continue;
+            addEvidenceItem(logId, 'INFO', '', 'Clustered log (expand with get_log_by_id).');
+        }
     }
 
     // Also look for stack traces
@@ -404,8 +442,48 @@ async function loadHistory() {
 }
 
 async function viewDiagnosis(id) {
-    // Could expand to show the full reasoning trace for a past diagnosis
-    console.log('View diagnosis:', id);
+    try {
+        resetPanels();
+        updateConnectionStatus('ready');
+        currentDiagnosisId = id;
+
+        const diag = await apiJson(`/diagnosis/${id}`);
+        const steps = await apiJson(`/diagnosis/${id}/steps`);
+
+        const title = diag.trigger_description || 'Investigation';
+        addReasoningStep('start', `Investigation: ${title}`);
+
+        for (const step of steps) {
+            if (step.step_type === 'thought') {
+                addReasoningStep('thought', step.content);
+            } else if (step.step_type === 'action') {
+                let toolName = '';
+                let toolInput = '';
+                let content = 'Calling tool';
+                try {
+                    const payload = JSON.parse(step.content);
+                    toolName = payload.tool_name || '';
+                    toolInput = payload.tool_input ? JSON.stringify(payload.tool_input) : '';
+                    if (toolName) content = `Calling tool: ${toolName}`;
+                } catch {
+                    content = step.content;
+                }
+                addReasoningStep('action', content, toolName, toolInput);
+            } else if (step.step_type === 'observation') {
+                addReasoningStep('observation', step.content);
+                extractEvidence(step.content);
+            }
+        }
+
+        if (diag.conclusion) {
+            addReasoningStep('conclusion', diag.conclusion);
+        }
+
+        updateStepCounter();
+        updateEvidenceCounter();
+    } catch (err) {
+        addReasoningStep('error', `Failed to load diagnosis: ${err.message}`);
+    }
 }
 
 // ---- Helpers ---------------------------------------------------------------

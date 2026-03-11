@@ -91,6 +91,16 @@ def build_agent_graph():
             return {}
 
         remaining = state["pending_tool_calls"][1:]
+        memory = AgentMemory(state["diagnosis_id"])
+        await memory.append(
+            "action",
+            json.dumps(
+                {
+                    "tool_name": tool_name,
+                    "tool_input": tool_call.get("args", {}),
+                }
+            ),
+        )
         tool_message_request = AIMessage(
             content="(tool call)",
             tool_calls=[tool_call],

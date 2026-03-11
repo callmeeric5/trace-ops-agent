@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from backend.agent.graph import run_diagnosis
+from backend.agent.memory import AgentMemory
 from backend.agent.guardrails import evaluate_action
 from backend.db.database import get_db
 from backend.models.diagnosis import (
@@ -107,6 +108,13 @@ async def get_diagnosis(diagnosis_id: str, db: AsyncSession = Depends(get_db)):
     if not diag:
         raise HTTPException(status_code=404, detail="Diagnosis not found")
     return diag
+
+
+@router.get("/{diagnosis_id}/steps")
+async def get_diagnosis_steps(diagnosis_id: str):
+    """Return stored reasoning steps for a diagnosis."""
+    memory = AgentMemory(diagnosis_id)
+    return await memory.get_history()
 
 
 @router.post("/approve")

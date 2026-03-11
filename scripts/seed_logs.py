@@ -33,7 +33,7 @@ def _make_logs() -> list[LogEntryORM]:
         ],
     }
 
-    for _ in range(200):
+    for _ in range(500):
         service = random.choice(list(services_info.keys()))
         template, level = random.choice(services_info[service])
         ts = now - timedelta(
@@ -193,7 +193,7 @@ async def seed():
         await session.commit()
 
     print(f"✅ Seeded {len(logs)} log entries")
-    print("   - ~200 normal INFO logs")
+    print("   - ~500 normal INFO logs")
     print("   - 3 bug scenarios (connection leak, cache penetration, duplicate charge)")
 
 
